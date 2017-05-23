@@ -5,8 +5,8 @@ Module.symvers
 *.ko
 *.mod.c
 modules.order
-firmware/firmware.bin
-firmware/AppleCameraInterface
+firmware.bin
+AppleCameraInterface
 .tmp_versions
 description-pak
 doc-pak
