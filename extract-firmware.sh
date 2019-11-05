@@ -13,11 +13,13 @@ hash_drv_osx_140='387097b5133e980196ac51504a60ae1ad8bab736eb0070a55774925ca01948
 hash_drv_osx_143_1='4667e6828f6bfc690a39cf9d561369a525f44394f48d0a98d750931b2f3f278b'
 hash_drv_osx_143_2='d4650346c940dafdc50e5fcbeeeffe074ec359726773e79c0cfa601cec6b1f08'
 hash_drv_osx_143_3='dfac86799c6cf0aceb59bb4e732be8f030e7943eb1146830c7136f62621c9853'
+hash_drv_osx_143_5='f56e68a880b65767335071531a1c75f3cfd4958adc6d871adf8dbf3b788e8ee1'
 
 hash_fw_wnd_105='dabb8cf8e874451ebc85c51ef524bd83ddfa237c9ba2e191f8532b896594e50e'
 hash_fw_wnd_138='ed75dc37b1a0e19949e9e046a629cb55deb6eec0f13ba8fd8dd49b5ccd5a800e'
 hash_fw_osx_140='504fcf1565bf10d61b31a12511226ae51991fb55d480f82de202a2f7ee9c966e'
 hash_fw_osx_143='e3e6034a67dfdaa27672dd547698bbc5b33f47f1fc7f5572a2fb68ea09d32d3d'
+hash_fw_osx_145='e3e6034a67dfdaa27672dd547698bbc5b33f47f1fc7f5572a2fb68ea09d32d4d'
 
 # Driver names
 declare -A known_hashes=(
@@ -27,6 +29,7 @@ declare -A known_hashes=(
   ["$hash_drv_osx_143_1"]='OS X, El Capitan'
   ["$hash_drv_osx_143_2"]='OS X, El Capitan 10.11.2'
   ["$hash_drv_osx_143_3"]='OS X, El Capitan 10.11.3'
+  ["$hash_drv_osx_143_5"]='OS X, El Capitan 10.11.5'
 )
 
 # Offset in bytes of the firmware inside the driver
@@ -37,6 +40,7 @@ declare -A firmw_offsets=(
   ["$hash_drv_osx_143_1"]=81920
   ["$hash_drv_osx_143_2"]=81920
   ["$hash_drv_osx_143_3"]=81920
+  ["$hash_drv_osx_143_5"]=81920
 )
 
 # Size in bytes of the firmware inside the driver 
@@ -47,6 +51,7 @@ declare -A firmw_sizes=(
   ["$hash_drv_osx_143_1"]=603715
   ["$hash_drv_osx_143_2"]=603715
   ["$hash_drv_osx_143_3"]=603715
+  ["$hash_drv_osx_143_5"]=603715
 )
 
 # Compression method used to store the firmware inside the driver
@@ -57,6 +62,7 @@ declare -A compression=(
   ["$hash_drv_osx_143_1"]='gzip'
   ["$hash_drv_osx_143_2"]='gzip'
   ["$hash_drv_osx_143_3"]='gzip'
+  ["$hash_drv_osx_143_5"]='gzip'
 )
 
 declare -A firmw_hashes=(
@@ -64,6 +70,7 @@ declare -A firmw_hashes=(
   ["$hash_fw_wnd_138"]='1.38'
   ["$hash_fw_osx_140"]='1.40.0'
   ["$hash_fw_osx_143"]='1.43.0'
+  ["$hash_fw_osx_145"]='1.45.0'
 )
 
 printHelp()

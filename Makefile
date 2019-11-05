@@ -4,13 +4,13 @@ DEB_NAME:=facetimehd-firmware
 DEB_VER:=0.1-1
 DEB_BASE_DIR:=debian
 
-DMG:=osxupd10.11.3.dmg
+DMG:=OSXUpd10.11.5.dmg
 OSX_DRV:=AppleCameraInterface
 OSX_DRV_DIR:=System/Library/Extensions/AppleCameraInterface.kext/Contents/MacOS
 
-RANGE:=187085540-191012220
+RANGE:=204909802-207733123
 
-URL:=https://support.apple.com/downloads/DL1858/en_US/$(DMG)
+URL:=https://updates.cdn-apple.com/2019/cert/041-88431-20191011-e7ee7d98-2878-4cd9-bc0a-d98b3a1e24b1/$(DMG)
 FILE:=$(OSX_DRV_DIR)/$(OSX_DRV)
 
 ifneq ("$(wildcard /usr/lib/firmware)", "")
