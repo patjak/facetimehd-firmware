@@ -23,6 +23,7 @@ fi
 echo -e "FacetimeHD firmware download and installation script\n"
 
 echo -n "Downloading driver..."
+cd /tmp
 curl -s -L -r "$RANGE" "$URL" | xzcat -q  2> /dev/null | cpio --format odc -i -d "./$FILE" &> /dev/null
 mv $FILE .
 rm -R ./System
