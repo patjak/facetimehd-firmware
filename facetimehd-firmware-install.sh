@@ -15,6 +15,11 @@ FW_HASH=e3e6034a67dfdaa27672dd547698bbc5b33f47f1fc7f5572a2fb68ea09d32d3d
 OFFSET=81920
 SIZE=603715
 
+if [[ "$EUID" != 0 ]]
+	then echo "Please run as root"
+	exit 1
+fi
+
 echo -e "FacetimeHD firmware download and installation script\n"
 
 echo -n "Downloading driver..."
