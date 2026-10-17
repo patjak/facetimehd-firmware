@@ -167,6 +167,11 @@ else
 	echo -n "Downloading driver..."
 	curl -s -L -r "$RANGE_10115" "$URL_10115" | xzcat -q 2> /dev/null \
 		| cpio --format odc -i -d "./$OSX_DRV_DIR/$OSX_DRV" &> /dev/null
+	if [[ ! -f "$OSX_DRV_DIR/$OSX_DRV" ]]; then
+		echo "failed"
+		echo "cpio could not unpack the driver. If this is BusyBox cpio, install GNU cpio. Aborting."
+		exit 1
+	fi
 	mv "$OSX_DRV_DIR/$OSX_DRV" .
 	rm -R ./System
 	echo "done"
