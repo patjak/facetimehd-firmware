@@ -80,19 +80,24 @@ declare -A firmw_hashes=(
   ["$hash_fw_osx_560"]='5.60.0'
 )
 
-# Known AppleCameraAssistant hashes. The assistant is the helper binary of the
-# userspace camera plugin; it carries the sensor calibration ("set") files,
-# which are not in the kext and only partially in the Boot Camp driver.
+# Known hashes of binaries that carry the sensor calibration ("set") files.
+# The assistant is the helper binary of the userspace camera plugin; the set
+# files are not in the kext. The Boot Camp driver from Apple product 041-89042
+# carries the same eleven files at different offsets; the older Boot Camp
+# driver that facetimehd-data extracts from has only four of them.
 hash_asst_osx_560='af6a9de00472657e925f546753c818f9e33636030892b14ca96a1b4817ea58c7'
+hash_drv_wnd_bc6='0394f64872280d4833ecd1b4d262d07e017ad5b7ebb84130450cb63630323c36'
 
-declare -A known_asst_hashes=(
-  ["$hash_asst_osx_560"]='macOS, Sierra 10.12.6'
+declare -A known_setfile_hashes=(
+  ["$hash_asst_osx_560"]='macOS, Sierra 10.12.6 (AppleCameraAssistant)'
+  ["$hash_drv_wnd_bc6"]='Windows Boot Camp 041-89042 (AppleCamera.sys)'
 )
 
-# Set files inside the 10.12.6 AppleCameraAssistant, as "offset size".
-# Extraction order for display purposes only.
-setfile_names_560='9112 1771 1871 1874 1222 8221 1571 1575 1674 1675 1671'
+# Set file offsets per source binary, as "offset size". The tables are picked
+# by hash at run time through a nameref, which shellcheck cannot follow.
+setfile_names='9112 1771 1871 1874 1222 8221 1571 1575 1674 1675 1671'
 
+# shellcheck disable=SC2034
 declare -A setfile_offsets_560=(
   [9112]='217088 33060'
   [1771]='253952 19040'
@@ -107,10 +112,26 @@ declare -A setfile_offsets_560=(
   [1671]='450560 18044'
 )
 
-# 9112/1771/1871/1874 are byte-identical to the files facetimehd-data extracts
-# from the Boot Camp driver, which is what validates the offsets above; the
-# other seven exist only in macOS. 1675 is verified on a MacBook10,1.
-declare -A setfile_hashes_560=(
+# shellcheck disable=SC2034
+declare -A setfile_offsets_bc6=(
+  [9112]='1854432 33060'
+  [1771]='1781248 19040'
+  [1871]='1743168 19040'
+  [1874]='1762208 19040'
+  [1222]='1887504 20076'
+  [8221]='1907584 30240'
+  [1571]='1937824 18652'
+  [1575]='1956480 18652'
+  [1674]='1800288 18044'
+  [1675]='1818336 18044'
+  [1671]='1836384 18044'
+)
+
+# One table for both sources: the eleven files are byte-identical wherever they
+# come from, so extracting the same hashes out of two unrelated binaries is
+# what validates both sets of offsets. 1675 is verified on a MacBook10,1 and
+# 1571 on a MacBookPro14,1.
+declare -A setfile_hashes=(
   [9112]='4dd756fa8460d8dc3d78d0d76944b2f92275d1fe9c83181bbc8292c81c005f1a'
   [1771]='756c2bb7c5e55b395449e43a0be1cb7c40c37dfc6c2b5abfaffb8ae70ff0fc4b'
   [1871]='bf36fbde0668ab7e44368b584f9fa64b5945b01003d04c6e3c6f22c0be0fd5f3'
@@ -141,9 +162,10 @@ OPTION:
 
   -x DRV_FILE         Extract the firmware from the driver DRV_FILE
 
-  -s ASST_FILE        Extract the eleven sensor calibration set files
-                      (NNNN_01XX.dat) from the AppleCameraAssistant binary
-                      ASST_FILE.
+  -s SET_FILE_SRC     Extract the eleven sensor calibration set files
+                      (NNNN_01XX.dat) from SET_FILE_SRC, which can be an
+                      AppleCameraAssistant or the Boot Camp AppleCamera.sys
+                      of Apple product 041-89042.
 
 NOTES:
 
@@ -166,12 +188,14 @@ NOTES:
   10.12.6 install or update package.
 
   Besides the firmware, the camera needs a per-sensor calibration ("set")
-  file. The Boot Camp driver that facetimehd-data extracts from carries only
-  four of the eleven; all eleven are embedded in AppleCameraAssistant, found
-  in a macOS installation under
+  file. All eleven are embedded in AppleCameraAssistant, found in a macOS
+  installation under
   /Library/CoreMediaIO/Plug-Ins/DAL/AppleCamera.plugin/Contents/Resources/
-  Extract them with -s. The 12-inch MacBook needs 1675_01XX.dat, which
-  exists only there.
+  and also in the AppleCamera.sys of the Boot Camp package for the 2017
+  models, Apple product 041-89042, whose extraction the wiki documents.
+  The older Boot Camp driver that facetimehd-data extracts from has only
+  four of them. Extract from either with -s: the files are identical,
+  only the offsets differ. The 12-inch MacBook needs 1675_01XX.dat.
 
   Both binaries can also be downloaded and installed directly from Apple's
   update servers by facetimehd-firmware-install.sh or 'make'.
@@ -224,13 +248,13 @@ checkPrerequisites()
 
 getCheckSum()
 {
-  sha256sum $1 | awk '{ print $1 }'
+  sha256sum "$1" | awk '{ print $1 }'
 }
 
 checkDriverHash()
 {
   # computing the hash for the input file
-  driver_hash="$(getCheckSum $1)"
+  driver_hash="$(getCheckSum "$1")"
 
   # checking if it is among the known hashes
   for cur_hash in "${!known_hashes[@]}"; do
@@ -249,7 +273,7 @@ checkDriverHash()
 checkFirmwareHash()
 {
   # computing the hash for the input file
-  fw_hash="$(getCheckSum $1)"
+  fw_hash="$(getCheckSum "$1")"
 
   # checking if it is among the known hashes
   for cur_hash in "${!firmw_hashes[@]}"; do
@@ -259,7 +283,7 @@ checkFirmwareHash()
     fi
   done
 
-  err "Mismatching firmware hash ${firm_hash}"
+  err "Mismatching firmware hash ${fw_hash}"
   return 1
 }
 
@@ -288,7 +312,7 @@ checkFirmwareHexdump()
 extractFirmware()
 {
   msg "Extracting firmware..."
-  dd bs=1 skip=$3 count=$4 if=$1 of="$2.tmp" &> /dev/null
+  dd bs=1 skip="$3" count="$4" if="$1" of="$2.tmp" &> /dev/null
 
   msg2 "Decompressing the firmware using $5..."
   case "$5" in
@@ -310,7 +334,7 @@ decompress_dmg()
 
   msg2 "Creating temporary directories..."
   mkdir -p "${_main_dir}/temp"
-  cd "${_main_dir}/temp"
+  cd "${_main_dir}/temp" || exit 1
 
   msg2 "Decompressing the image..."
   7z e -y "${_main_dir}/$1" "5.hfs" > /dev/null
@@ -328,7 +352,7 @@ decompress_dmg()
   rm "OSXUpd10.11.3.pkg/Payload"
 
   msg2 "Decompressing archives..."
-  cd "OSXUpd10.11.3.pkg"
+  cd "OSXUpd10.11.3.pkg" || exit 1
   find . -name "Payload.part*.xz" -exec xz --decompress --verbose {} \;
   cat "Payload.part"* | cpio -id &> /dev/null
   cp "./System/Library/Extensions/AppleCameraInterface.kext/Contents/MacOS/AppleCameraInterface" \
@@ -355,26 +379,26 @@ extract_from_osx()
       exit 1
     else
       msg2 "Ignoring hashes and check the firmware header..."
-      checkFirmwareHexdump "firmware.bin" then
+      checkFirmwareHexdump "firmware.bin"
     fi
   fi
 }
 
-checkAssistantHash()
+checkSetfileSourceHash()
 {
   # computing the hash for the input file
-  asst_hash="$(getCheckSum $1)"
+  setfile_hash="$(getCheckSum "$1")"
 
   # checking if it is among the known hashes
-  for cur_hash in "${!known_asst_hashes[@]}"; do
-    if [[ "$asst_hash" == "$cur_hash" ]]; then
-      echo "Found matching hash from ${known_asst_hashes[$cur_hash]}"
+  for cur_hash in "${!known_setfile_hashes[@]}"; do
+    if [[ "$setfile_hash" == "$cur_hash" ]]; then
+      echo "Found matching hash from ${known_setfile_hashes[$cur_hash]}"
       return
     fi
   done
 
-  err "Mismatching AppleCameraAssistant hash for $1"
-  err "The unknown hash is ${asst_hash}"
+  err "Mismatching set file source hash for $1"
+  err "The unknown hash is ${setfile_hash}"
   err "No set files extracted!"
   exit 1
 }
@@ -382,16 +406,34 @@ checkAssistantHash()
 extract_setfiles()
 {
   echo ""
-  checkAssistantHash "$1"
+  checkSetfileSourceHash "$1"
+
+  case "$setfile_hash" in
+    "$hash_asst_osx_560")
+      local -n offsets=setfile_offsets_560
+      ;;
+    "$hash_drv_wnd_bc6")
+      local -n offsets=setfile_offsets_bc6
+      ;;
+    *)
+      err "No offsets for ${known_setfile_hashes[$setfile_hash]}"
+      err "No set files extracted!"
+      exit 1
+      ;;
+  esac
 
   msg "Extracting sensor set files..."
   local name offset size
-  for name in $setfile_names_560; do
-    read -r offset size <<< "${setfile_offsets_560[$name]}"
-    dd bs=1 skip=$offset count=$size if="$1" of="${name}_01XX.dat" &> /dev/null
+  for name in $setfile_names; do
+    read -r offset size <<< "${offsets[$name]}"
+    dd bs=1 skip="$offset" count="$size" if="$1" of="${name}_01XX.dat" &> /dev/null
 
-    if [[ "$(getCheckSum ${name}_01XX.dat)" != "${setfile_hashes_560[$name]}" ]]; then
+    if [[ "$(getCheckSum "${name}_01XX.dat")" != "${setfile_hashes[$name]}" ]]; then
       err "Mismatching hash for ${name}_01XX.dat"
+      local n
+      for n in $setfile_names; do
+        rm -f "${n}_01XX.dat"
+      done
       err "No set files extracted!"
       exit 1
     fi
@@ -404,7 +446,7 @@ main()
   echo ""
 
   # Parsing arguments
-  while [[ $# > 0 ]]; do
+  while [[ $# -gt 0 ]]; do
     case $1 in
       -h|--help)
         printHelp
@@ -419,7 +461,7 @@ main()
         shift
         ;;
       -s)
-        asst_file="$2"
+        setfile_src="$2"
         shift
         ;;
       -i|--ignore-hashes)
@@ -435,14 +477,14 @@ main()
     decompress_dmg "$dmg_file"
   fi
 
-  cd "${_main_dir}"
+  cd "${_main_dir}" || exit 1
 
   if [[ ! -z "$drv_file" ]]; then
     extract_from_osx "$drv_file"
   fi
 
-  if [[ ! -z "$asst_file" ]]; then
-    extract_setfiles "$asst_file"
+  if [[ ! -z "$setfile_src" ]]; then
+    extract_setfiles "$setfile_src"
   fi
 
   echo ""
