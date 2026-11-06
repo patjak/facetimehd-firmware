@@ -86,6 +86,7 @@ $(OSX_DRV):
 	@# Ty to wvengen, see: https://github.com/patjak/bcwc_pcie/issues/14#issuecomment-167446787
 	@echo "Downloading the driver, please wait..."
 	@(curl -k -L -r "$(RANGE)" "$(URL)" | xzcat -q | cpio --format odc -i -d "./$(FILE)") &> /dev/null || true
+	@test -f "$(FILE)" || { echo "cpio could not unpack the driver. If this is BusyBox cpio, install GNU cpio."; exit 1; }
 	@mv "$(FILE)" .
 	@rmdir -p "$(OSX_DRV_DIR)"
 
